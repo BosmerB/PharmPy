@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Mon Feb 10 13:26:53 2020
+
+@author: blee
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Fri Apr 12 10:19:07 2019
 
 @author: blee 
@@ -97,9 +104,7 @@ dicts = []
 
 #API call and response
 for i in pins_df["rxcui"]:
-    in_json_url = "https://rxnav.nlm.nih.gov/REST/rxcui/" +\
-    str(i) +\
-    "/related.json?tty=IN"
+    in_json_url = f"https://rxnav.nlm.nih.gov/REST/rxcui/{i}/related.json?tty=IN"
     
     r = requests.get(in_json_url)
     
@@ -113,17 +118,9 @@ for i in pins_df["rxcui"]:
     
     dicts.append(subs_dict)
     
-    print(subs_dict)
-    
-#creating single dictionary from list, then creating df resulting dict
-single_dict = defaultdict(list)      
-for i in dicts:
-    for key, value in i.items():
-        single_dict[key].append(value)   
-        
-pin2in_df = pd.DataFrame.from_dict(single_dict)
-    
-    
+
+pin2in_df = pd.DataFrame.from_dict(dicts)
+       
 #merging pin2in reference table to complete ref table 
 allin_ref_table = (pd.merge(ref_table, pin2in_df, how="left", 
                             left_on = "rxcui", right_on="PIN_rxcui"))
@@ -154,9 +151,18 @@ ref_clean = allin_ref_table.iloc[:,0:6].drop_duplicates()
 epcloc = ref_clean["className"] != "Established Pharmacologic Class (EPC)"
 final_ref = ref_clean.loc[epcloc].sort_values("className")
 
-#cleaning up column names 
-final_ref.columns = (["class_id","class_name","class_type","substance_name",
-                      "rxcui","tty"])
 
+
+#cleaning up column names 
+final_ref.columns = (["class_id","class_name","class_type",
+                      "rxcui","substance_name","tty"])
+  
+final_ref[["class_name","substance_name"]] =\
+ final_ref[["class_name","substance_name"]].apply(lambda x: x.str.lower())
+    
+    
+(final_ref.to_csv(
+        'T:/Active Projects/Board of Pharmacy/Data Resources/'
+        'RxClass Reference Table/rxclass_classmember_table.txt', sep = '|'))
 
 
